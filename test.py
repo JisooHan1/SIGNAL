@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from torch.utils.data import DataLoader
 from gesture_dataset.torch_dataset import GestureDataset, collate_fn
-from gesture_dataset.model import GestureBiLSTM
+from gesture_dataset.model import GestureCNNBiLSTM
 from collections import Counter
 
 # 📦 전처리된 테스트 데이터 불러오기
@@ -20,8 +20,8 @@ dataloader = DataLoader(dataset, batch_size=16, collate_fn=collate_fn)
 
 # 모델 로딩
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = GestureBiLSTM(input_dim=63, hidden_dim=128, output_dim=15).to(device)
-model.load_state_dict(torch.load("gesture_bilstm.pt", map_location=device))
+model = GestureCNNBiLSTM(input_dim=63, cnn_out=128, lstm_hidden=128, output_dim=15).to(device)
+model.load_state_dict(torch.load("gesture_cnn_bilstm.pt", map_location=device))
 model.eval()
 
 # 평가
