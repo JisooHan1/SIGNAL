@@ -20,7 +20,7 @@ dataloader = DataLoader(dataset, batch_size=16, shuffle=True, collate_fn=collate
 
 # 모델 초기화
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = GestureBiLSTM(input_dim=63, hidden_dim=128, output_dim=14).to(device)
+model = GestureBiLSTM(input_dim=63, hidden_dim=128, output_dim=15).to(device)
 
 # 손실 함수 & 옵티마이저
 criterion = torch.nn.CrossEntropyLoss()
