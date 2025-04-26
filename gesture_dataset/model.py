@@ -1,46 +1,42 @@
-# gesture_dataset/model.py
-
+import torch
 import torch.nn as nn
 
-class GestureBiLSTM(nn.Module):
-    def __init__(self, input_dim=63, hidden_dim=256, output_dim=15):
-        super(GestureBiLSTM, self).__init__()
-        self.lstm = nn.LSTM(
-            input_dim,
-            hidden_dim,
-            num_layers=2,
-            batch_first=True,
-            bidirectional=True,
-            dropout=0.3  # LSTM 내부 dropout
+class GestureCNNBiLSTM(nn.Module):
+    def __init__(self, input_dim=63, cnn_out=128, lstm_hidden=256, output_dim=15):
+        super(GestureCNNBiLSTM, self).__init__()
+
+        self.conv1d = nn.Conv1d(
+            in_channels=input_dim,
+            out_channels=cnn_out,
+            kernel_size=3,
+            stride=1,
+            padding=1  # 유지: 입력 길이 그대로 유지
         )
-        self.dropout = nn.Dropout(0.4)
-        self.fc1 = nn.Linear(hidden_dim * 2, 128)
+
         self.relu = nn.ReLU()
+        self.dropout = nn.Dropout(0.4)
+
+        self.bilstm = nn.LSTM(
+            input_size=cnn_out,
+            hidden_size=lstm_hidden,
+            num_layers=2,
+            dropout=0.3,
+            bidirectional=True,
+            batch_first=True
+        )
+
+        self.fc1 = nn.Linear(lstm_hidden * 2, 128)
         self.fc2 = nn.Linear(128, output_dim)
 
     def forward(self, x):
-        out, _ = self.lstm(x)                  # [B, T, 2H]
-        out = out[:, -1, :]                    # 마지막 타임스텝만 사용
-        out = self.dropout(out)                # dropout 추가
-        out = self.relu(self.fc1(out))         # FC + ReLU
-        return self.fc2(out)                   # 최종 출력 (softmax는 Loss 함수가 알아서 처리)
+        # x: [B, T, 63] -> permute for Conv1d: [B, 63, T]
+        x = x.permute(0, 2, 1)
+        x = self.conv1d(x)      # [B, cnn_out, T]
+        x = self.relu(x)
 
-
-
-
-
-# # gesture_dataset/model.py
-
-# import torch.nn as nn
-
-# class GestureBiLSTM(nn.Module):
-#     def __init__(self, input_dim=63, hidden_dim=128, output_dim=14):
-#         super(GestureBiLSTM, self).__init__()
-#         self.lstm = nn.LSTM(input_dim, hidden_dim, num_layers=1, batch_first=True, bidirectional=True)
-#         self.dropout = nn.Dropout(0.3)
-#         self.fc = nn.Linear(hidden_dim * 2, output_dim)  # *2 for bidirectional
-
-#     def forward(self, x):
-#         out, _ = self.lstm(x)              # [B, T, 2H]
-#         out = self.dropout(out[:, -1, :])  # 마지막 타임스텝의 출력만 사용
-#         return self.fc(out)
+        x = x.permute(0, 2, 1)  # [B, T, cnn_out] for LSTM
+        out, _ = self.bilstm(x) # [B, T, 2H]
+        out = out[:, -1, :]     # 마지막 타임스텝만
+        out = self.dropout(out)
+        out = self.relu(self.fc1(out))
+        return self.fc2(out)

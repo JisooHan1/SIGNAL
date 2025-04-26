@@ -20,7 +20,7 @@ dataloader = DataLoader(dataset, batch_size=16, collate_fn=collate_fn)
 
 # 모델 로딩
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = GestureBiLSTM(input_dim=63, hidden_dim=128, output_dim=14).to(device)
+model = GestureBiLSTM(input_dim=63, hidden_dim=128, output_dim=15).to(device)
 model.load_state_dict(torch.load("gesture_bilstm.pt", map_location=device))
 model.eval()
 
